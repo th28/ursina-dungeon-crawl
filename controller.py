@@ -13,8 +13,10 @@ class FirstPersonController(Entity):
         self.strf_r = False
         self.strf_l = False
         self.anim_dur = .2
+        self.step_scale = 2.0
         self.animator = None
         self.target = None
+        self.dir = None
         camera.parent = self.camera_pivot
         camera.position = (0,0,0)
         camera.rotation = (0,0,0)
@@ -26,66 +28,81 @@ class FirstPersonController(Entity):
 
     def animate_move(self, target, duration, rotate=False):
         progress = 0
-        while (progress <= duration):
-            progress = progress + time.dt
-            pct = clamp(progress / duration, 0, 1)
-            if rotate:
-                self.rotation = lerp(self.rotation, target, pct)
+        if not rotate:
+            hit_info = raycast(self.world_position + self.up*.5, self.dir, distance=1, debug=True)
+            print(hit_info.hit)
+            if hit_info.hit:
+                pass
             else:
-                self.position = lerp(self.position, target, pct)
-            yield 
+                while (progress <= duration):
+                    progress = progress + time.dt
+                    pct = clamp(progress / duration, 0, 1)
+                    if rotate:
+                        self.rotation = lerp(self.rotation, target, pct)
+                    else:
+                        self.position = lerp(self.position, target, pct)
+                    yield 
+        else:
+            while (progress <= duration):
+                    progress = progress + time.dt
+                    pct = clamp(progress / duration, 0, 1)
+                    if rotate:
+                        self.rotation = lerp(self.rotation, target, pct)
+                    else:
+                        self.position = lerp(self.position, target, pct)
+                    yield 
+
         
     def update(self):
-            #print(self.target)
-            print(self.position)
+            #print(self.position)
             if self.animator:
                 try:
                     next(self.animator)
                 except StopIteration:
                     self.animator = None
-                    #self.position = round(self.position,0)
 
-            if self.animator == None:
+            if self.animator is None:
                 if self.go_fwd:
-                        self.target = round(self.position + self.forward.__mul__(2.0), 0)
+                        self.target = round(self.position + self.dir.__mul__(self.step_scale), 0)
+                        self.animator = self.animate_move(self.target, duration=self.anim_dur, rotate=False)
                         self.go_fwd = False
                 elif self.go_bwd:
-                        self.target = round(self.position + self.back.__mul__(2.0), 0)                      
+                        self.target = round(self.position + self.dir.__mul__(self.step_scale), 0)  
+                        self.animator = self.animate_move(self.target, duration=self.anim_dur, rotate=False)                    
                         self.go_bwd = False
                 elif self.turn_r:  
-                        self.target = self.rotation + Vec3(0,90,0)
-                        #self.animator = self.animate_move(self.rotation + Vec3(0,90,0), duration=self.anim_dur, rotate=True)                    
-                        #self.turn_r = False
+                        self.target = self.rotation + self.dir
+                        self.animator = self.animate_move(self.target, duration=self.anim_dur, rotate=True)                    
+                        self.turn_r = False
                 elif self.turn_l: 
-                        self.animator = self.animate_move(self.rotation + Vec3(0,90,0), duration=self.anim_dur, rotate=True)                  
-                        #self.turn_l = False
+                        self.target = self.rotation + self.dir
+                        self.animator = self.animate_move(self.target, duration=self.anim_dur, rotate=True)                  
+                        self.turn_l = False
                 elif self.strf_l:
-                        self.target = round(self.position + self.left.__mul__(2.0), 0)                      
+                        self.target = round(self.position + self.dir.__mul__(self.step_scale), 0)      
+                        self.animator = self.animate_move(self.target, duration=self.anim_dur, rotate=False)                
                         self.strf_l = False
                 elif self.strf_r:
-                        self.target = round(self.position + self.right.__mul__(2.0), 0)
+                        self.target = round(self.position + self.dir.__mul__(self.step_scale), 0)
+                        self.animator = self.animate_move(self.target, duration=self.anim_dur, rotate=False)
                         self.strf_r = False
                 
-                if self.target != None:
-                        
-                    #hit_info = raycast(self.world_position + Vec3(0,0.5,0), direction=self.target, distance=0.5)
-                    #if not hit_info.hit:
-                        if self.turn_r or self.turn_l:
-                            self.animator = self.animate_move(self.target, duration=self.anim_dur, rotate=True)
-                        else:
-                            self.animator = self.animate_move(self.target, duration=self.anim_dur, rotate=False)
-
-
     def input(self, key):
-        if key == 'w up':
+        if key == 'w':
             self.go_fwd = True
-        elif key == 's up':
+            self.dir = self.forward
+        elif key == 's':
             self.go_bwd = True
-        elif key == 'd up':
+            self.dir = self.back
+        elif key == 'd':
             self.turn_r = True
-        elif key == 'a up':
+            self.dir = Vec3(0,90,0)
+        elif key == 'a':
             self.turn_l = True
-        elif key == 'e up':
+            self.dir = Vec3(0,-90,0)
+        elif key == 'e':
             self.strf_r = True
-        elif key == 'q up':
+            self.dir = self.right
+        elif key == 'q':
             self.strf_l = True
+            self.dir = self.left
