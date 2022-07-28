@@ -1,8 +1,8 @@
 from ursina import *
 
 class FirstPersonController(Entity):
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent=parent)
         self.speed = 5
         self.height = 2
         self.camera_pivot = Entity(parent=self, y=self.height)
@@ -10,8 +10,10 @@ class FirstPersonController(Entity):
         self.go_fwd = False
         self.turn_l = False
         self.turn_r = False
+        self.collider = 'box'
         self.strf_r = False
         self.strf_l = False
+        self.eternal = True
         self.anim_dur = .2
         self.step_scale = 2.0
         self.animator = None
@@ -29,9 +31,9 @@ class FirstPersonController(Entity):
     def animate_move(self, target, duration, rotate=False):
         progress = 0
         if not rotate:
-            hit_info = raycast(self.world_position + self.up*.5, self.dir, distance=1, debug=True)
-            print(hit_info.hit)
-            if hit_info.hit:
+            hit_info = raycast(self.world_position + self.up*.5, self.dir, distance=1, ignore=(self,))
+            
+            if hit_info.hit and hit_info.entity.name == 'level_geom':
                 pass
             else:
                 while (progress <= duration):
@@ -88,7 +90,9 @@ class FirstPersonController(Entity):
                         self.strf_r = False
                 
     def input(self, key):
+        
         if key == 'w':
+            print(self.position)
             self.go_fwd = True
             self.dir = self.forward
         elif key == 's':

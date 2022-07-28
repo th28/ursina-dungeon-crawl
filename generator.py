@@ -125,10 +125,12 @@ def gen_map(map_w, map_h, room_max_w, room_max_h, room_cnt):
     #connect rooms
     room_pairs = combinations(room_lst, 2)
     #print(list(room_pairs))
+    all_paths = []
     for pair in room_pairs:
         start = pair[0].center
         end = pair[1].center
         path = get_path(mp, start, end)
+        all_paths.append(path)
 
         #dig some paths
         for t in path:
@@ -136,25 +138,19 @@ def gen_map(map_w, map_h, room_max_w, room_max_h, room_cnt):
             neighbors = get_neighbors(mp, t)
             for neighbor in neighbors:
                 if mp[neighbor[1]][neighbor[0]] == 'x':
-                    mp[neighbor[1]][neighbor[0]] = 'w'
-        
-    quit_flag = False
-    for i in range(map_h):
-        if quit_flag == False:
-            for j in range(map_w):
-                if mp[i][j] == '.':                        
-                    mp[i][j] = 'p'
-                    quit_flag = True
-                    break
-        else:
-            break  
-                        
+                    mp[neighbor[1]][neighbor[0]] = 'w' 
 
-    return mp
-            
+    longest_path = max(all_paths, key=len)
+    start = longest_path[0]
+    end = longest_path[-1]
+                
+    mp[start[1]][start[0]] = 'p'
+    mp[end[1]][end[0]] = 'e'
 
-#z = gen_map(100,100, 10, 10, 5)
-#for i in z:
-#    print(i)
+    return mp            
+
+z = gen_map(40, 40, 10, 10, 5)
+for i in z:
+    print(i)
 
 
